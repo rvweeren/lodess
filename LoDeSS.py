@@ -212,7 +212,7 @@ def target(calfile,target):
         phaseshift format: [xxx.xxdeg, yy.yydeg]
     '''
     calfile_abs = os.path.abspath(calfile)
-    os.system(f'cp -r {calfile} calibrator.h5')
+    os.system(f'cp -r {calfile_abs} calibrator.h5')
     missinglist = find_missing_stations()
 
     mslist = sorted(glob.glob('*msdemix'))
