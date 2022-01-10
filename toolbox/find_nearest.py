@@ -14,7 +14,7 @@ import argparse as argp
 
 parser = argp.ArgumentParser()
 parser.add_argument('crdstring', help='Coordinates to look at.')
-parser.add_argument('--maxdistance',default=3,type=int,help='Maximum distance for a given source')
+parser.add_argument('--maxdistance',default=3,type=float,help='Maximum distance for a given source')
 
 res = parser.parse_args()
 

@@ -83,7 +83,7 @@ class Pointing():
         while len(self.commands) != 0:
             os.chdir(self.lnum)
             for cmd in self.commands:
-                command = f'wget -c --timeout=10 {cmd}'
+                command = f'wget -c --timeout=10 --tries=999 {cmd}'
                 os.system(command)
             os.chdir('..')
             self.check()

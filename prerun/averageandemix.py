@@ -82,7 +82,7 @@ for ms in mslist:
      cmd += 'demix.targetsource=' + targetsource + ' '
    cmd += 'demix.instrumentmodel=' + instrument + ' '
    cmd += 'demix.demixtimestep=16 demix.demixfreqstep=64 '
-   cmd += 'demix.ignoretarget=True '
+   cmd += 'demix.ignoretarget=False'
  
    print(cmd)
    os.system(cmd)
