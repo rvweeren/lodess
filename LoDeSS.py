@@ -310,7 +310,7 @@ def calibrator():
         # I am so sorry for this line
         sourcename = '3c380'
     
-    cmd = f'''python /net/rijn/data2/rvweeren/LoTSS_ClusterCAL/runwscleanLBautoR.py --BLsmooth --ionfactor --docircular --no-beamcor --skymodel={skymodel} --skymodelsource={sourcename} --soltype-list="['phaseonly','complexgain']" --solint-list="[1,8]" --nchan-list="[1,1]" --smoothnessconstraint-list="[0.3,1]" --imsize=4096 --uvmin=300 --stopafterskysolve --channelsout=24 --fitspectralpol=False --soltypecycles-list="[0,0]" --normamps=False --stop=1 --smoothnessreffrequency-list="[30.,0.]" --doflagging=True --doflagslowphases=False --flagslowamprms=25 {input_concat}'''
+    cmd = f'''python /net/rijn/data2/rvweeren/LoTSS_ClusterCAL/runwscleanLBautoR.py --BLsmooth --ionfactor --docircular --no-beamcor --skymodel={skymodel} --skymodelsource={sourcename} --soltype-list="['scalarphasediff','scalarphase','complexgain']" --solint-list="[4,1,8]" --nchan-list="[1,1,1]" --smoothnessconstraint-list="[0.6,0.3,1]" --imsize=4096 --uvmin=300 --stopafterskysolve --channelsout=24 --fitspectralpol=False --soltypecycles-list="[0,0,0]" --normamps=False --stop=1 --smoothnessreffrequency-list="[30.,20.,0.]" --doflagging=True --doflagslowphases=False --flagslowamprms=25 {input_concat}'''
     print(cmd)
     os.system(cmd)   
 
