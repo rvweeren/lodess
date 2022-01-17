@@ -485,7 +485,7 @@ if __name__ == "__main__":
     parse.add_argument('--boxes', help='Folder with boxes, called DirXX. Needed for direction dependent calibration')
     parse.add_argument('--nthreads', default=6, help='Amount of threads to be spawned by DD calibration. 5 will basically fill up a 96 core node (~100 load avg)')
     parse.add_argument('--prerun', action = 'store_true', help='Do this if the folder contains raw .tar files instead of demixed folders. Untarring has to happen on the node itself - so from a performance POV this might not be a good choice.')
-    parse.add_argument('--pipeline', help='Pipeline of choice', choices=['DD','DI_target','DI_calibrator','DDF'])
+    parse.add_argument('--pipeline', help='Pipeline of choice', choices=['DD','DI_target','DI_calibrator','DDF','full'])
 
     res = parse.parse_args()
 
@@ -513,3 +513,18 @@ if __name__ == "__main__":
         target(calfile_abs,res.direction)
     elif res.pipeline=='DDF':
         DDF_pipeline(location,res.direction)
+    elif res.pipeline=='full':
+        # Run the full pipeline.
+        # This is useful BUT PLEASE CHECK
+        # EACH INDIVIDUAL STEP
+        #
+        # PLEASE DO IT
+        calfile_abs = os.path.abspath(res.cal_H5)
+        initrun(location)
+        target(calfile_abs,res.direction)
+        os.chdir(../) # Go back from extract_directions to main root
+        wd = os.getcwd()
+        dd_pipeline('./','./extract_directions/regions_ws1/',res.nthreads)
+        os.chdir(wd)
+        DDF_pipeline('./')
+
