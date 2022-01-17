@@ -375,7 +375,7 @@ def target(calfile,target):
     # Copy + calibrate
     os.system(f'cp -r phaseshifted_{outname} backup_phaseshifted_{outname}')
     generate_boxfile(target)
-    cmd = f'''python /net/rijn/data2/rvweeren/LoTSS_ClusterCAL/runwscleanLBautoR.py --pixelscale 8 -b boxfile.reg --antennaconstraint="['core',None]" --BLsmooth --ionfactor 0.02 --docircular --startfromtgss --soltype-list="['scalarphasediffFR','tecandphase']" --solint-list="[6,1]" --nchan-list="[1,1]" --smoothnessconstraint-list="[1.0,0.0]" --uvmin=300 --channelsout=24 --fitspectralpol=False --soltypecycles-list="[0,0]" --normamps=False --stop=5 --smoothnessreffrequency-list="[30.,0]" --doflagging=True --doflagslowphases=False --flagslowamprms=25 phaseshifted_{outname}'''
+    cmd = f'''python /net/rijn/data2/rvweeren/LoTSS_ClusterCAL/runwscleanLBautoR.py --pixelscale 8 -b boxfile.reg --antennaconstraint="['core',None]" --BLsmooth --ionfactor 0.02 --docircular --startfromtgss --soltype-list="['scalarphasediffFR','tecandphase']" --solint-list="[24,1]" --nchan-list="[1,1]" --smoothnessconstraint-list="[1.0,0.0]" --uvmin=300 --channelsout=24 --fitspectralpol=False --soltypecycles-list="[0,0]" --normamps=False --stop=5 --smoothnessreffrequency-list="[30.,0]" --doflagging=True --doflagslowphases=False --flagslowamprms=25 phaseshifted_{outname}'''
     print(cmd)
     os.system(cmd)   
 
@@ -497,6 +497,16 @@ if __name__ == "__main__":
         handle.write('\n')
         handle.write(call)
 
+    if res.direction[0] == '(':
+        # Modify the direction string so it is a bit easier to use
+        # convert it to the "normal way"
+        resstring = res.direction
+        reslist = resstring.replace('(','').replace(')','').split(', ')
+        reslist = [i+'deg' for i in reslist]
+        new_restring = '[' + ','.join(reslist) + ']'
+        res.direction = new_restring
+        print('Reformatting direction to: '+res.direction)
+
     if res.prerun:
         pre_init(location)
 
@@ -519,10 +529,11 @@ if __name__ == "__main__":
         # EACH INDIVIDUAL STEP
         #
         # PLEASE DO IT
+        # Also note the two chdirs necessary for running this code properly
         calfile_abs = os.path.abspath(res.cal_H5)
         initrun(location)
         target(calfile_abs,res.direction)
-        os.chdir(../) # Go back from extract_directions to main root
+        os.chdir("../") # Go back from extract_directions to main root
         wd = os.getcwd()
         dd_pipeline('./','./extract_directions/regions_ws1/',res.nthreads)
         os.chdir(wd)
