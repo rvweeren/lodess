@@ -244,8 +244,8 @@ def initrun(LnumLoc):
 
 def extract_directions(calibrator):
     filename = glob.glob('*MFS-image.fits')[0]
-    img = bdsf.process_image(filename, rms_box = (640,160), rms_map=True, thresh='hard', thresh_isl=10.0, thresh_pix=25.0)
-    img.write_catalog(outfile='regions_wsclean1.fits', bbs_patches='single', catalog_type='srl', clobber=True, format='fits')
+    # img = bdsf.process_image(filename, rms_box = (640,160), rms_map=True, thresh='hard', thresh_isl=10.0, thresh_pix=25.0)
+    # img.write_catalog(outfile='regions_wsclean1.fits', bbs_patches='single', catalog_type='srl', clobber=True, format='fits')
 
     cmd = f'''python extract.py'''
     print(cmd)
@@ -310,7 +310,7 @@ def calibrator():
         # I am so sorry for this line
         sourcename = '3c380'
     
-    cmd = f'''python /net/rijn/data2/rvweeren/LoTSS_ClusterCAL/runwscleanLBautoR.py --BLsmooth --ionfactor --docircular --no-beamcor --skymodel={skymodel} --skymodelsource={sourcename} --soltype-list="['scalarphasediff','scalarphase','complexgain']" --solint-list="[4,1,8]" --nchan-list="[1,1,1]" --smoothnessconstraint-list="[0.6,0.3,1]" --imsize=4096 --uvmin=300 --stopafterskysolve --channelsout=24 --fitspectralpol=False --soltypecycles-list="[0,0,0]" --normamps=False --stop=1 --smoothnessreffrequency-list="[30.,20.,0.]" --doflagging=True --doflagslowphases=False --flagslowamprms=25 {input_concat}'''
+    cmd = f'''python /net/rijn/data2/rvweeren/LoTSS_ClusterCAL/runwscleanLBautoR.py --BLsmooth --ionfactor 0.02 --docircular --no-beamcor --skymodel={skymodel} --skymodelsource={sourcename} --soltype-list="['scalarphasediff','scalarphase','complexgain']" --solint-list="[4,1,8]" --nchan-list="[1,1,1]" --smoothnessconstraint-list="[0.6,0.3,1]" --imsize=4096 --uvmin=300 --stopafterskysolve --channelsout=24 --fitspectralpol=False --soltypecycles-list="[0,0,0]" --normamps=False --stop=1 --smoothnessreffrequency-list="[30.,20.,0.]" --doflagging=True --doflagslowphases=False --flagslowamprms=25 {input_concat}'''
     print(cmd)
     os.system(cmd)   
 
@@ -375,7 +375,7 @@ def target(calfile,target):
     # Copy + calibrate
     os.system(f'cp -r phaseshifted_{outname} backup_phaseshifted_{outname}')
     generate_boxfile(target)
-    cmd = f'''python /net/rijn/data2/rvweeren/LoTSS_ClusterCAL/runwscleanLBautoR.py --pixelscale 8 -b boxfile.reg --dejumpFR --antennaconstraint="['core',None]" --BLsmooth --ionfactor 0.02 --docircular --startfromtgss --soltype-list="['scalarphasediffFR','tecandphase']" --solint-list="[6,1]" --nchan-list="[1,1]" --smoothnessconstraint-list="[1.0,0.0]" --uvmin=300 --channelsout=24 --fitspectralpol=False --soltypecycles-list="[0,0]" --normamps=False --stop=5 --smoothnessreffrequency-list="[30.,0]" --doflagging=True --doflagslowphases=False --flagslowamprms=25 phaseshifted_{outname}'''
+    cmd = f'''python /net/rijn/data2/rvweeren/LoTSS_ClusterCAL/runwscleanLBautoR.py --pixelscale 8 -b boxfile.reg --antennaconstraint="['core',None]" --BLsmooth --ionfactor 0.02 --docircular --startfromtgss --soltype-list="['scalarphasediffFR','tecandphase']" --solint-list="[6,1]" --nchan-list="[1,1]" --smoothnessconstraint-list="[1.0,0.0]" --uvmin=300 --channelsout=24 --fitspectralpol=False --soltypecycles-list="[0,0]" --normamps=False --stop=5 --smoothnessreffrequency-list="[30.,0]" --doflagging=True --doflagslowphases=False --flagslowamprms=25 phaseshifted_{outname}'''
     print(cmd)
     os.system(cmd)   
 
@@ -400,7 +400,9 @@ def target(calfile,target):
     os.chdir('extract_directions')
     os.system(f'cp -r ../DI_image/image_000-MFS-image.fits .')
     os.system(f'cp -r /net/rijn/data2/groeneveld/LoDeSS_files/DI/extract.py .')
+    os.system(f'cp -r /net/rijn/data2/groeneveld/LoDeSS_files/DI/split_rectangles.py .')
     extract_directions(target)
+    os.system(f'python split_rectangles.py regions_ws1.reg')
     # I don't intend on making this part of a 'full' pipeline,
     # as the input of the user is critical in this step. Maybe
     # once we have found that the choice of the directions
@@ -488,6 +490,13 @@ if __name__ == "__main__":
     res = parse.parse_args()
 
     location = res.location
+    call = ' '.join(sys.argv)
+    if not os.path.isfile('calls.log'):
+        os.system('touch calls.log')
+    with open('calls.log','a') as handle:
+        handle.write('\n')
+        handle.write(call)
+
     if res.prerun:
         pre_init(location)
 
