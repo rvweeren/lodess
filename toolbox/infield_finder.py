@@ -1,3 +1,31 @@
+"""
+    This script is the main helper-file for the LOFAR Decameter Sky Survey (LoDeSS).
+    LoDeSS uses a calibration strategy that requires a bright in-field calibrator.
+    As the choice of in-field calibrator seems to be rather important, I wrote this
+    script to help users (and with users I mean primarily me) to find suitable candidates.
+    There is not a lot of data on decameter frequencies, so I added a way to make a 
+    spectrum. That way, you can easily check the spectrum (so you don't pick a target)
+    that's turning over
+    
+    --------------------------------------------
+
+    TODO:
+       - Nothing, I am done. This code is perfect.
+       - Introduce new bugs, because there are no bugs in this code
+    
+    --------------------------------------------
+
+    HOWTO:
+       - Just run:
+            python3 infield_finder.py 120+52
+        Here, the code on the right is the same as the name of the pointing according 
+        to the LTA.
+    
+       - Optional arguments:
+          x --fov :  how big the image should be
+          x --circlerad  :  the radius of the "guiding" circle that helps you with finding the best calibrator sources.
+"""
+
 import numpy as np
 import matplotlib.pyplot as plt
 import sys
@@ -10,6 +38,9 @@ from astroquery.vizier import Vizier
 from astroquery.ned import Ned
 from astroquery.simbad import Simbad
 from matplotlib.patches import Circle
+
+__author__ = "Christian Groeneveld (groeneveld@strw.leidenuniv.nl)"
+__email__ = "groeneveld@strw.leidenuniv.nl"
 
 Vizier.ROW_LIMIT = -1
 targets = [ {'name' : 'CasA', 'ra' : 6.123487680622104,  'dec' : 1.0265153995604648},
@@ -62,12 +93,14 @@ def process_pointing(coord):
     simb = Simbad.query_region(coord,radius=2*u.arcmin)
     namelist = simb['MAIN_ID']
     # Order of precedence in the naming convention
+    namelist = list(filter(lambda x: '[' not in x, namelist)) # Prevent tagged names to 'clog up' the namelist
     name = [namelist[0]]
     name += list(filter(lambda x: "NVSS" in x,namelist))
     name += list(filter(lambda x: "8C" in x,namelist))
     name += list(filter(lambda x: "4C" in x,namelist))
     name += list(filter(lambda x: "3C" in x,namelist))
     name = name[-1]
+    print(name)
     name = fix_name(name)
     spectrum.set_title(name)
 
@@ -93,7 +126,7 @@ def find_sources(pointing,radius):
     coords = [SkyCoord(rasel,desel,unit=(u.hourangle,u.deg)) for rasel,desel in zip(ra,dec)]
     return coords,flux
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     args = argparse.ArgumentParser()
     args.add_argument('coord', help='Coordinates of the pointing')
     args.add_argument('--fov', help='Size of the final image in degrees',default = 18,type=float)
