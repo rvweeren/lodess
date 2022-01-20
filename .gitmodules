@@ -1,0 +1,3 @@
+[submodule "lofar_facet_selfcal"]
+	path = lofar_facet_selfcal
+	url = git@github.com:rvweeren/lofar_facet_selfcal.git
