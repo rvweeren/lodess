@@ -476,9 +476,9 @@ def interpolate_station(antname,ifstep, ntimes, padding=False, includeamps=True,
 def single_writerun(ifreq):
     print('Processing frequency slot {:d}'.format(ifreq))
     data_int = np.ones((Ntimes+1,Nantenna,4,size,size),dtype=np.float32)
-    tupples = [(station, ifreq, Ntimes, args['padding'], includeamps, scalarpol) for station in names]
+    tupples = [(station, ifreq, Ntimes, args['padding'], includeamps, scalarpol,args['smoothamps']) for station in names]
     for station in names:
-        antenna, screen, xxwcs, yywcs, gXXcom, gYYcom, RA_X, DEC_Y = interpolate_station(station, ifreq, Ntimes, padding=args['padding'], includeamps=includeamps, scalarpol=scalarpol)
+        antenna, screen, xxwcs, yywcs, gXXcom, gYYcom, RA_X, DEC_Y = interpolate_station(station, ifreq, Ntimes, padding=args['padding'], includeamps=includeamps, scalarpol=scalarpol, smoothamps=args['smoothamps'])
         #print('Screen: ', screen.shape)
         #print('data_int: ', data_int.shape)
         data_int[:-1, antenna, :, :, :] = screen[:, 0, 0, :, :, :]
@@ -598,7 +598,7 @@ if ncpu == 1:
         print('Processing frequency slot {:d}'.format(ifreq))
         tupples = [(station, ifreq, Ntimes, args['padding'], includeamps, scalarpol) for station in names]
         for station in names:
-            antenna, screen, xxwcs, yywcs, gXXcom, gYYcom, RA_X, DEC_Y = interpolate_station(station, ifreq, Ntimes, padding=args['padding'], includeamps=includeamps, scalarpol=scalarpol)
+            antenna, screen, xxwcs, yywcs, gXXcom, gYYcom, RA_X, DEC_Y = interpolate_station(station, ifreq, Ntimes, padding=args['padding'], includeamps=includeamps, scalarpol=scalarpol, smoothamps=args['smoothamps'])
             #print('Screen: ', screen.shape)
             #print('data_int: ', data_int.shape)
             data_int[:-1, ifreq, antenna, :, :, :] = screen[:, 0, 0, :, :, :]
