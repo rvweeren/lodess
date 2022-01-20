@@ -14,7 +14,7 @@ from astropy.wcs import WCS
 import sys,os,glob,argparse,bdsf
 
 parse = argparse.ArgumentParser(description='Generate regions for DD calibration')
-parse.add_argument('--calibrator', help='Pointing of the calibrator')
+parse.add_argument('--calibrator', help='Pointing of the calibrator',default="[0deg,-90deg]")
 parse.add_argument('--thres',help='Baseline flux threshold for detection', default=1,type=float)
 parse.add_argument('--boxsize', help='Boxsize of the regions', default=0.3, type=float)
 parse.add_argument('--sep', help='Minimal seperation between the centers of the boxes',default=1,type=float)

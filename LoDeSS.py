@@ -535,7 +535,7 @@ if __name__ == "__main__":
         target(calfile_abs,res.direction)
         os.chdir("../") # Go back from extract_directions to main root
         wd = os.getcwd()
-        dd_pipeline('./','./extract_directions/regions_ws1/',res.nthreads)
+        dd_pipeline('./','./extract_directions/regions_ws1/',res.nthreads,None)
         os.chdir(wd)
-        DDF_pipeline('./')
+        DDF_pipeline('./',None)
 
