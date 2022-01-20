@@ -52,10 +52,7 @@ parser = argparse.ArgumentParser(description='Make a FITS IDG diaginal screen fr
 parser.add_argument('--size', help='Size of the screen in pixels, default=64', default=64, type=int)
 parser.add_argument('--boxwidth', help='Size of the screen in degrees, default=2.5', default=2.5, type=float)
 parser.add_argument('--includeamps', help='Include the amplitude000 solutions (True/False, default=True)', type=eval, choices=[True, False], default='True')
-
-parser.add_argument('--phaseonly', help='Only for testing, to be implemented....', action='store_true')
-parser.add_argument('--amplitudeonly', help='Only for testing, to be implemented.....', action='store_true')
-
+parser.add_argument('--smoothamps', help='Create smooth amplitude screens, recommended when including amplitudes ', action='store_true')
 parser.add_argument('--padding', help='Padd screen with amplitude=1 and phase=0 (True/False, default=False)', type=eval, choices=[True, False], default='False')
 parser.add_argument('--stepsizepadding', help='Add padding direction every stepsizepadding pixels, default=4', default=4, type=int)
 parser.add_argument('--H5file', help='H5 file', type=str, required=True)
@@ -66,6 +63,11 @@ parser.add_argument('--ms', help='Measurement set to be imaged with IDG, phasece
 parser.add_argument('--ncpu', help='Amount of subprocesses that are to be spawned for computation of gainscreens. This is a memory limited step, and non-unity values of ncpu might slow down this process!', type=int, default=1)
 parser.add_argument('--timeblocks', help='Break up the final gainscreen in timeblocks, which will decrease the memory footprint',default=1,type=int)
 
+
+if not args['includeamps']:
+   if args['smoothamps']:
+      print('Cannot use  --includeamps=False and --smoothamps, they are mutually exclusive...')
+      sys.exit()
 
 args = vars(parser.parse_args())
 fitsfilename = args['FITSscreen']
@@ -277,7 +279,7 @@ DEC = np.asarray(DEC)
 
 
 #def interpolate_station(antidx, interpidx, x_from, y_from, tecs, x_to, y_to):
-def interpolate_station(antname,ifstep, ntimes, padding=False, includeamps=True, scalarpol=False):
+def interpolate_station(antname,ifstep, ntimes, padding=False, includeamps=True, scalarpol=False, smoothamps=False):
     print ('Doing', antname)
     #print('Processing antenna {:s}.'.format(antname))
     if 'ST001' in h5_stations:
@@ -375,23 +377,34 @@ def interpolate_station(antname,ifstep, ntimes, padding=False, includeamps=True,
           rbfYY = rbfXX
         else:
           rbfYY = Rbf(X, Y, gYY, smooth=1e-8)  
-        '''
-        if ('CS' not in antname) and ('RS' not in antname):
-            print('== bla ==')
-            for i, (rr,dd) in enumerate(zip(RA,DEC)):
-                print(rr)
-                print(dd)
-                orig = tstep[interpidx][i]
-                interp = rbf(rr, dd)
-                print('Difference TEC and Rbf: {:e}'.format(orig - interp))
-                print('== end bla ==')
-        '''
 
-        tinterpXX = rbfXX(xx, yy)
-        if scalarpol:
-          tinterpYY = tinterpXX
-        else:
-          tinterpYY = rbfYY(xx, yy)
+        if smoothamps:
+           #rbfXXphase = Rbf(X, Y, np.exp(1j*np.angle(gXX)), smooth=1e-8)
+           rbfXXphase = Rbf(X, Y, gXX, smooth=1e-8) # do include amps here, makes the phases smoother at the end
+           if scalarpol:
+             rbfYYphase = rbfXXphase
+           else:
+             #rbfYYphase = Rbf(X, Y, np.exp(1j*np.angle(gYY)), smooth=1e-8)  
+             rbfYYphase = Rbf(X, Y, gYY, smooth=1e-8) # do include amps here, makes the phases smoother at the end
+
+
+           rbfXXamp = Rbf(X, Y, np.abs(gXX)*np.exp(1j*0.0), smooth=1e-2)
+           if scalarpol:
+             rbfYYamp = rbfXXamp
+           else:
+             rbfYYamp = Rbf(X, Y, np.abs(gYY)*np.exp(1j*0.0), smooth=1e-2)  
+
+           tinterpXX = np.abs(rbfXXamp(xx, yy))*np.exp(1j*np.angle(rbfXXphase(xx, yy)))   
+           if scalarpol:
+             tinterpYY = tinterpXX
+           else:
+             tinterpYY = np.abs(rbfYYamp(xx, yy))*np.exp(1j*np.angle(rbfYYphase(xx, yy)))   
+        else: 
+           tinterpXX = rbfXX(xx, yy)
+           if scalarpol:
+             tinterpYY = tinterpXX
+           else:
+             tinterpYY = rbfYY(xx, yy)
         
         
         if not includeamps:
