@@ -29,6 +29,10 @@ freqstep = 1
 c3c380= np.array([-1.44194739, 0.85078014])
 c3c196= np.array([2.15374139,0.8415521])
 
+ROOT_FOLDER = '/net/rijn/data2/groeneveld/LoDeSS_files/'
+HELPER_SCRIPTS = ROOT_FOLDER + 'lofar_facet_selfcal/'
+FACET_PIPELINE = HELPER_SCRIPTS + 'facetselfcal.py'
+
 def add_dummyms(msfiles):
     '''
     Add dummy ms to create a regular freuqency grid when doing a concat with DPPP
@@ -88,7 +92,6 @@ def add_dummyms(msfiles):
     return newmslist
 
 def _run_sing(runname):
-    # sing_extension = 'singularity exec -B /data1,/net/rijn1/data2,/net/rijn2/data2/,/net/rijn3/data2,/net/rijn4/data2,/net/rijn5/data2,/net/rijn6/data2/net/rijn7/data2/,/net/rijn/data2,/net/hoendiep/data2,/net/bovenrijn/data1/,/net/ouderijn/data2,/net/tussenrijn/data2 /net/rijn/data2/groeneveld/LoDeSS_files/pill-latestSep.simg'
     cmd = f'python launch_run.py {runname}'
     print(cmd)
     os.system(cmd)
@@ -256,8 +259,8 @@ def _run_demix(location):
 
 def pre_init(location):
     ncpu = 4 # Be patient...
-    os.system(f'cp -r /net/rijn/data2/groeneveld/LoDeSS_files/prerun/*py {location}')
-    os.system(f'cp -r /net/rijn/data2/groeneveld/LoDeSS_files/prerun/demix.sourcedb {location}')
+    os.system(f'cp -r {ROOT_FOLDER}prerun/*py {location}')
+    os.system(f'cp -r {ROOT_FOLDER}prerun/demix.sourcedb {location}')
     demix_pool = []
 
     for i in range(ncpu):
@@ -310,7 +313,7 @@ def calibrator():
         # I am so sorry for this line
         sourcename = '3c380'
     
-    cmd = f'''python /net/rijn/data2/rvweeren/LoTSS_ClusterCAL/runwscleanLBautoR.py --BLsmooth --ionfactor 0.02 --docircular --no-beamcor --skymodel={skymodel} --skymodelsource={sourcename} --soltype-list="['scalarphasediff','scalarphase','complexgain']" --solint-list="[4,1,8]" --nchan-list="[1,1,1]" --smoothnessconstraint-list="[0.6,0.3,1]" --imsize=4096 --uvmin=300 --stopafterskysolve --channelsout=24 --fitspectralpol=False --soltypecycles-list="[0,0,0]" --normamps=False --stop=1 --smoothnessreffrequency-list="[30.,20.,0.]" --doflagging=True --doflagslowphases=False --flagslowamprms=25 {input_concat}'''
+    cmd = f'''python {FACET_PIPELINE} --helperscriptspath={HELPER_SCRIPTS} --BLsmooth --ionfactor 0.02 --docircular --no-beamcor --skymodel={skymodel} --skymodelsource={sourcename} --soltype-list="['scalarphasediff','scalarphase','complexgain']" --solint-list="[4,1,8]" --nchan-list="[1,1,1]" --smoothnessconstraint-list="[0.6,0.3,1]" --imsize=4096 --uvmin=300 --stopafterskysolve --channelsout=24 --fitspectralpol=False --soltypecycles-list="[0,0,0]" --normamps=False --stop=1 --smoothnessreffrequency-list="[30.,20.,0.]" --doflagging=True --doflagslowphases=False --flagslowamprms=25 {input_concat}'''
     print(cmd)
     os.system(cmd)   
 
@@ -346,7 +349,7 @@ def target(calfile,target):
     os.system(cmd)
 
     # Go to circular ...
-    os.system('cp -r /net/rijn/data2/groeneveld/LoDeSS_files/lin2circ.py .')
+    os.system('cp -r {ROOT_FOLDER}lin2circ.py .')
     os.system(f'python lin2circ.py -i {outname} -c DATA -o DATA_CIRC')
 
     # Now, apply the calfile
@@ -375,7 +378,7 @@ def target(calfile,target):
     # Copy + calibrate
     os.system(f'cp -r phaseshifted_{outname} backup_phaseshifted_{outname}')
     generate_boxfile(target)
-    cmd = f'''python /net/rijn/data2/rvweeren/LoTSS_ClusterCAL/runwscleanLBautoR.py --pixelscale 8 -b boxfile.reg --antennaconstraint="['core',None]" --BLsmooth --ionfactor 0.02 --docircular --startfromtgss --soltype-list="['scalarphasediffFR','tecandphase']" --solint-list="[24,1]" --nchan-list="[1,1]" --smoothnessconstraint-list="[1.0,0.0]" --uvmin=300 --channelsout=24 --fitspectralpol=False --soltypecycles-list="[0,0]" --normamps=False --stop=5 --smoothnessreffrequency-list="[30.,0]" --doflagging=True --doflagslowphases=False --flagslowamprms=25 phaseshifted_{outname}'''
+    cmd = f'''python {FACET_PIPELINE} --helperscriptspath {HELPER_SCRIPTS} --pixelscale 8 -b boxfile.reg --antennaconstraint="['core',None]" --BLsmooth --ionfactor 0.02 --docircular --startfromtgss --soltype-list="['scalarphasediffFR','tecandphase']" --solint-list="[24,1]" --nchan-list="[1,1]" --smoothnessconstraint-list="[1.0,0.0]" --uvmin=300 --channelsout=24 --fitspectralpol=False --soltypecycles-list="[0,0]" --normamps=False --stop=5 --smoothnessreffrequency-list="[30.,0]" --doflagging=True --doflagslowphases=False --flagslowamprms=25 phaseshifted_{outname}'''
     print(cmd)
     os.system(cmd)   
 
@@ -399,8 +402,8 @@ def target(calfile,target):
     os.mkdir('extract_directions')
     os.chdir('extract_directions')
     os.system(f'cp -r ../DI_image/image_000-MFS-image.fits .')
-    os.system(f'cp -r /net/rijn/data2/groeneveld/LoDeSS_files/DI/extract.py .')
-    os.system(f'cp -r /net/rijn/data2/groeneveld/LoDeSS_files/DI/split_rectangles.py .')
+    os.system(f'cp -r {ROOT_FOLDER}DI/extract.py .')
+    os.system(f'cp -r {ROOT_FOLDER}DI/split_rectangles.py .')
     extract_directions(target)
     os.system(f'python split_rectangles.py regions_ws1.reg')
     # I don't intend on making this part of a 'full' pipeline,
@@ -418,7 +421,7 @@ def dd_pipeline(location,boxes,nthreads,target):
     os.mkdir('DD_cal')
     os.chdir('DD_cal')
     os.system(f'cp -r {boxes} ./rectangles')
-    os.system(f'cp -r /net/rijn/data2/groeneveld/LoDeSS_files/DD/* .')
+    os.system(f'cp -r {ROOT_FOLDER}DD/* .')
     os.system(f'cp -r ../DI_image/image_000-????-model.fits .')
     os.system(f'cp -r ../DI_image/*ms .')
 
@@ -441,7 +444,7 @@ def DDF_pipeline(location,direction):
         This pipeline starts off where the DD pipeline stops:
         it checks what the noise is for 
     '''
-    os.system(f'cp -r /net/rijn/data2/groeneveld/LoDeSS_files/runwsclean.py .')
+    os.system(f'cp -r {FACET_PIPELINE} runwsclean.py')
     os.chdir(location)
     if not os.path.isdir('DD_cal'):
         print("You need to perform DD calibration before running the facet-imaging pipeline")
