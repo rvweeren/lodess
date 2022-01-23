@@ -225,19 +225,28 @@ def run(comb):
     subprocess.call(cmd, shell=True)
 
 def initrun(LnumLoc):
-    Lnum = LnumLoc.split('/')[-2]
+    # Fixed for multiple sources
+
+    if len(LnumLoc)==1:
+        Lnum = LnumLoc.split('/')[-2]
+    else:
+        lnums = [l.split('/')[-2] for l in LnumLoc]
+        fl = glob.glob(Lnumloc[0]+/*MS)[0] # find example file
+        t = pt.table(fl+'::FIELD')
+        Lnum = fl.getcol('CODE')[0]
     os.mkdir(Lnum)
     os.system(f'cp -r {glob.glob("*py")[0]} {Lnum}')
     os.system(f'cp -r /net/rijn/data2/groeneveld/largefiles/Band_PA.h5 {Lnum}')
     os.chdir(Lnum)
-    if LnumLoc[0] == '/': #Absolute path
-        tocopy = glob.glob(LnumLoc + '*msdemix')
-    else:
-        tocopy = glob.glob('../'+LnumLoc+'*msdemix')
-    for cop in sorted(tocopy):
-        print(f'Copying SB{cop.split("SB")[1][:3]}')
-        os.system(f'cp -r {cop} .')
-    
+    for loc in LnumLoc:
+        if loc[0] == '/': #Absolute path
+            tocopy = glob.glob(loc + '*msdemix')
+        else:
+            tocopy = glob.glob('../'+loc+'*msdemix')
+        for cop in sorted(tocopy):
+            print(f'Copying SB{cop.split("SB")[1][:3]}')
+            os.system(f'cp -r {cop} .')
+
     target_source = find_skymodel()
     if target_source == '3c196':
         os.system(f'cp -r /net/bovenrijn/data1/groeneveld/software/prefactor/skymodels/3C196-pandey.skymodel .')
@@ -327,6 +336,8 @@ def target(calfile,target):
         DPPP apply to original ms, and use wsclean to image
 
         phaseshift format: [xxx.xxdeg, yy.yydeg]
+
+        TODO: Now, also allow for multiple Lnums
     '''
     os.system(f'cp -r {calfile} calibrator.h5')
     missinglist = find_missing_stations()
@@ -482,15 +493,22 @@ def DDF_pipeline(location,direction):
 
 if __name__ == "__main__":
     parse = argparse.ArgumentParser(description='LoDeSS calibrator+target pipeline')
-    parse.add_argument('location',help='Location of the downloaded+demixed data. For now, it is important that the final folder begins with L??????.',type=str)
-    parse.add_argument('--cal_H5',help='H5 file from the calibrator source. This is used to make an initial correction', default=None)
+    parse.add_argument('location',help='Location of the downloaded+demixed data. For now, it is important that the final folder begins with L??????.',type=str,nargs='+')
+    parse.add_argument('--cal_H5',help='H5 file from the calibrator source. This is used to make an initial correction', default=None,nargs='*')
     parse.add_argument('--direction',help='Direction to go to when using the target pipeline. Format: "[xxx.xxdeg,yyy.yydeg]"', default=None,type=str)
     parse.add_argument('--boxes', help='Folder with boxes, called DirXX. Needed for direction dependent calibration')
     parse.add_argument('--nthreads', default=6, help='Amount of threads to be spawned by DD calibration. 5 will basically fill up a 96 core node (~100 load avg)')
     parse.add_argument('--prerun', action = 'store_true', help='Do this if the folder contains raw .tar files instead of demixed folders. Untarring has to happen on the node itself - so from a performance POV this might not be a good choice.')
     parse.add_argument('--pipeline', help='Pipeline of choice', choices=['DD','DI_target','DI_calibrator','DDF','full'])
+    parse.add_argument('-d','--debug', help='Debugging option, please don\'t touch',action='store_true')
 
     res = parse.parse_args()
+
+    # Check here if the input is valid
+    if len(res.cal_H5)!=len(res.location) and res.pipeline=='DI_target':
+        raise ValueError('Must give as many calibrator files as MS locations when running the DI pipeline')
+    if len(res.location)>1 and res.pipeline=='DI_calibrator':
+        raise ValueError('Only use 1 measurement for the calibrator pipeline')
 
     location = res.location
     call = ' '.join(sys.argv)
@@ -500,30 +518,38 @@ if __name__ == "__main__":
         handle.write('\n')
         handle.write(call)
 
-    if res.direction[0] == '(':
-        # Modify the direction string so it is a bit easier to use
-        # convert it to the "normal way"
-        resstring = res.direction
-        reslist = resstring.replace('(','').replace(')','').split(', ')
-        reslist = [i+'deg' for i in reslist]
-        new_restring = '[' + ','.join(reslist) + ']'
-        res.direction = new_restring
-        print('Reformatting direction to: '+res.direction)
+    if res.direction != None:
+        if res.direction[0] == '(':
+            # Modify the direction string so it is a bit easier to use
+            # convert it to the "normal way"
+            resstring = res.direction
+            reslist = resstring.replace('(','').replace(')','').split(', ')
+            reslist = [i+'deg' for i in reslist]
+            new_restring = '[' + ','.join(reslist) + ']'
+            res.direction = new_restring
+            print('Reformatting direction to: '+res.direction)
+
+    if res.debug:
+        for a in vars(res):
+            print(a,vars(res)[a])
+        print("Stopping for debugging...")
+        sys.exit(0)
 
     if res.prerun:
-        pre_init(location)
+        for loc in location:
+            pre_init(location)
 
     if res.pipeline=='DI_calibrator':
-        initrun(location)
+        initrun(location[0])
         calibrator()
     elif res.pipeline=='DD':
         # This step doesn't necessarily need a target
         dd_pipeline(location,res.boxes,res.nthreads,res.direction)
     elif res.pipeline=='DI_target':
         # This step absolutely needs a target
-        calfile_abs = os.path.abspath(res.cal_H5)
+        calfiles_abs = [os.path.abspath(calfile) for calfile in res.cal_H5]
         initrun(location)
-        target(calfile_abs,res.direction)
+        target(calfiles_abs,res.direction)
     elif res.pipeline=='DDF':
         DDF_pipeline(location,res.direction)
     elif res.pipeline=='full':
