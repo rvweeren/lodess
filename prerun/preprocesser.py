@@ -13,6 +13,8 @@ import sys,os,glob
 
     obviously, it would be better if the LTA would just work
     but that's to much to be asked
+    
+    TODO: dont put tar xvf in the multiproc run
 '''
 
 class Pointing():
