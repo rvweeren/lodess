@@ -54,6 +54,8 @@ class Pointing():
         '''
             Does both renaming/untarring/deleting
             But also checks if there are invalid tars, which have to be redownloaded again
+            
+            Probably a memory leak somewhere in here...
         '''
         os.chdir(self.lnum)
         baddl = []
