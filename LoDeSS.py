@@ -30,7 +30,7 @@ c3c380= np.array([-1.44194739, 0.85078014])
 c3c196= np.array([2.15374139,0.8415521])
 
 ROOT_FOLDER = '/net/rijn/data2/groeneveld/LoDeSS_files/'
-HELPER_SCRIPTS = ROOT_FOLDER + 'lofar_facet_selfcal/'
+HELPER_SCRIPTS = '/net/rijn/data2/rvweeren/LoTSS_ClusterCAL/'
 FACET_PIPELINE = HELPER_SCRIPTS + 'facetselfcal.py'
 
 def add_dummyms(msfiles):
@@ -325,6 +325,99 @@ def calibrator():
     cmd = f'''python {FACET_PIPELINE} --helperscriptspath={HELPER_SCRIPTS} --BLsmooth --ionfactor 0.02 --docircular --no-beamcor --skymodel={skymodel} --skymodelsource={sourcename} --soltype-list="['scalarphasediff','scalarphase','complexgain']" --solint-list="[4,1,8]" --nchan-list="[1,1,1]" --smoothnessconstraint-list="[0.6,0.3,1]" --imsize=4096 --uvmin=300 --stopafterskysolve --channelsout=24 --fitspectralpol=False --soltypecycles-list="[0,0,0]" --normamps=False --stop=1 --smoothnessreffrequency-list="[30.,20.,0.]" --doflagging=True --doflagslowphases=False --flagslowamprms=25 {input_concat}'''
     print(cmd)
     os.system(cmd)   
+
+def individual_target(Lnum,calfile,target):
+    '''
+        This runs the individual target part of the pipeline
+        splits up the data in individual runs
+
+        calfile: abs path to calfile
+    '''
+    os.mkdir(Lnum)
+    os.system(f'mv {Lnum}*msdemix {Lnum}')
+    os.chdir(Lnum)
+    os.system(f'cp -r {calfile} calibrator.h5')
+    missinglist = find_missing_stations()
+
+    mslist = sorted(glob.glob('*msdemix'))
+    comblist = [(ms,missinglist) for ms in mslist]
+    for c in comblist:
+        run(c)
+
+    msnames = glob.glob('*corr*')
+    msname = msnames[2].split('SB')[0]
+    corrected_msnames = add_dummyms(msnames)
+    outname = msname + 'concat.ms'
+    retstr = '['
+    for j in corrected_msnames:
+        retstr += f'{j},'
+    retstr = retstr[:-1] + ']'
+    cmd = f'DPPP numthreads=80 msin={retstr} msout={outname} msout.storagemanager=dysco msin.missingdata=true msin.orderms=false msout.writefullresflag=false steps=[]'
+    print(cmd)
+    os.system(cmd)
+
+    # Go to circular ...
+    os.system('cp -r {ROOT_FOLDER}lin2circ.py .')
+    os.system(f'python lin2circ.py -i {outname} -c DATA -o DATA_CIRC')
+
+    # Now, apply the calfile
+
+    cmd = f'DPPP msin={outname} msout=. steps=[ac1,ac2] msout.datacolumn=CALCORRECT_DATA_CIRC msin.datacolumn=DATA_CIRC '
+    cmd += f'ac1.type=applycal ac1.parmdb=calibrator.h5 ac1.solset=sol000 ac1.correction=phase000 '
+    cmd += f'ac2.type=applycal ac2.parmdb=calibrator.h5 ac2.solset=sol000 ac2.correction=amplitude000 '
+    print(cmd)
+    os.system(cmd)
+
+    # ... and go back to linear
+
+    os.system(f'python lin2circ.py -i {outname} -c CALCORRECT_DATA_CIRC -b -l CALCORRECT_DATA')
+    os.system(f'cp -r {outname} ../')
+
+    # Phaseshift to target+average
+
+    cmd = f'DPPP msin={outname} msin.datacolumn=CALCORRECT_DATA msout=phaseshifted_{outname} msout.storagemanager=dysco steps=[phaseshift,averager] '
+    cmd += f'phaseshift.phasecenter={target} averager.freqstep=4 msout.writefullresflag=false '
+    print(cmd)
+    os.system(cmd)
+
+    os.system(f'cp -r phaseshifted_{outname} ../')
+    os.chdir('../') # Move back to main folder
+
+def consolidated_target(target):
+    os.mkdir('target_cal')
+    os.chdir('target_cal')
+    os.system('mv ../phaseshifted_* .')
+    generate_boxfile(target)
+    # The following line uses a wildcard statement to glob all phaseshifted measurement sets
+    cmd = f'''python {FACET_PIPELINE} --helperscriptspath {HELPER_SCRIPTS} --pixelscale 8 -b boxfile.reg --antennaconstraint="['core',None]" --BLsmooth --ionfactor 0.02 --docircular --startfromtgss --soltype-list="['scalarphasediffFR','tecandphase']" --solint-list="[24,1]" --nchan-list="[1,1]" --smoothnessconstraint-list="[1.0,0.0]" --uvmin=300 --channelsout=24 --fitspectralpol=False --soltypecycles-list="[0,0]" --normamps=False --stop=5 --smoothnessreffrequency-list="[30.,0]" --doflagging=True --doflagslowphases=False --flagslowamprms=25 phaseshifted_*'''
+    print(cmd)
+    os.system(cmd)   
+
+    # Make a direction independent image of the whole field
+    os.chdir('..')
+    os.mkdir('DI_image')
+    os.system('cp -r target_cal/merged_selfcalcyle004* .') # Keep their original names - we know what form they are in
+    for outname in glob.glob('L*concat.ms'):
+        cmd = f'DPPP msin={outname} msout=DI_image/corrected_{outname} msin.datacolumn=CALCORRECT_DATA_CIRC steps=[ac1,ac2] msout.writefullresflag=false msout.storagemanager=dysco '
+        cmd += f'ac1.type=applycal ac1.parmdb=merged_selfcalcyle004_phaseshifted_{outname}.h5 ac1.solset=sol000 ac1.correction=phase000 '
+        cmd += f'ac2.type=applycal ac2.parmdb=merged_selfcalcyle004_phaseshifted_{outname}.h5 ac2.solset=sol000 ac2.correction=amplitude000 '
+        print(cmd)
+        os.system(cmd)
+    os.chdir('DI_image')
+    
+    wscleancmd = f'wsclean -no-update-model-required -minuv-l 80.0 -size 8192 8192 -reorder -parallel-deconvolution 2048 -weight briggs -0.5 -weighting-rank-filter 3 -clean-border 1 -parallel-reordering 4 -mgain 0.8 -fit-beam -data-column DATA -padding 1.4 -join-channels -channels-out 8 -auto-mask 2.5 -auto-threshold 0.5 -pol i -baseline-averaging 2.396844981071314 -use-wgridder -name image_000 -scale 8.0arcsec -niter 150000 corrected_*'
+    print(wscleancmd)
+    os.system(wscleancmd)
+    os.chdir('..')
+
+    # Make a guesstimate of the regions
+    os.mkdir('extract_directions')
+    os.chdir('extract_directions')
+    os.system(f'cp -r ../DI_image/image_000-MFS-image.fits .')
+    os.system(f'cp -r {ROOT_FOLDER}DI/extract.py .')
+    os.system(f'cp -r {ROOT_FOLDER}DI/split_rectangles.py .')
+    extract_directions(target)
+    os.system(f'python split_rectangles.py regions_ws1.reg')
 
 def target(calfile,target):
     '''
