@@ -58,7 +58,7 @@ parser.add_argument('--stepsizepadding', help='Add padding direction every steps
 parser.add_argument('--H5file', help='H5 file', type=str, required=True)
 parser.add_argument('--FITSscreen', help='Output FITS screen file', type=str, default='gainscreen_rbf.fits')
 parser.add_argument('--freqdownsamplefactor', help='Downsample freq axis with this factor, needs to be a multiple on the input freq length', type=int, default=None)
-parser.add_argument('--plotsforttesting', help='Only for testing.....', action='store_true')
+parser.add_argument('--plotsfortesting', help='Only for testing.....', action='store_true')
 parser.add_argument('--ms', help='Measurement set to be imaged with IDG, phasecenter location is taken from the ms', type=str,required=True)
 parser.add_argument('--ncpu', help='Amount of subprocesses that are to be spawned for computation of gainscreens. This is a memory limited step, and non-unity values of ncpu might slow down this process!', type=int, default=1)
 parser.add_argument('--timeblocks', help='Break up the final gainscreen in timeblocks, which will decrease the memory footprint',default=1,type=int)
