@@ -1,4 +1,5 @@
 import os
+import shutil
 import glob,sys
 import casacore.tables as pt
 import numpy as np
@@ -86,5 +87,6 @@ for ms in mslist:
  
    print(cmd)
    os.system(cmd)
+   shutil.rmdir(ms)
 
 os.chdir(cwd)
