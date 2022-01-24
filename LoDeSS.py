@@ -228,10 +228,10 @@ def initrun(LnumLoc):
     # Fixed for multiple sources
 
     if len(LnumLoc)==1:
-        Lnum = LnumLoc.split('/')[-2]
+        Lnum = LnumLoc[0].split('/')[-2]
     else:
         lnums = [l.split('/')[-2] for l in LnumLoc]
-        fl = glob.glob(Lnumloc[0]+/*MS)[0] # find example file
+        fl = glob.glob(Lnumloc[0]+'/*MS')[0] # find example file
         t = pt.table(fl+'::FIELD')
         Lnum = fl.getcol('CODE')[0]
     os.mkdir(Lnum)
@@ -504,9 +504,10 @@ if __name__ == "__main__":
 
     res = parse.parse_args()
 
+    if res.cal_H5:
     # Check here if the input is valid
-    if len(res.cal_H5)!=len(res.location) and res.pipeline=='DI_target':
-        raise ValueError('Must give as many calibrator files as MS locations when running the DI pipeline')
+        if len(res.cal_H5)!=len(res.location) and res.pipeline=='DI_target':
+            raise ValueError('Must give as many calibrator files as MS locations when running the DI pipeline')
     if len(res.location)>1 and res.pipeline=='DI_calibrator':
         raise ValueError('Only use 1 measurement for the calibrator pipeline')
 
@@ -537,10 +538,10 @@ if __name__ == "__main__":
 
     if res.prerun:
         for loc in location:
-            pre_init(location)
+            pre_init(loc)
 
     if res.pipeline=='DI_calibrator':
-        initrun(location[0])
+        initrun(location)
         calibrator()
     elif res.pipeline=='DD':
         # This step doesn't necessarily need a target
