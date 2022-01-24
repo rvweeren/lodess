@@ -460,7 +460,8 @@ def interpolate_station(antname,ifstep, ntimes, padding=False, includeamps=True,
         
         if not scalarpol:
           if not np.allclose(tinterpYY[Ycom.astype(int),Xcom.astype(int)], gYYcom, rtol=1e-1, atol=1e-1):
-             raise ValueError('Interpolated screen for polarization YY does not go through nodal points.')
+             #raise ValueError('Interpolated screen for polarization YY does not go through nodal points.')
+             print('Interpolated screen for polarization YY does not go through nodal points.')   
         
         del gXX, gYY #, Ycom, Xcom #, gXXcom, gYYcom # free up RAM
         matrix = np.asarray([np.real(tinterpXX), np.imag(tinterpXX), np.real(tinterpYY), np.imag(tinterpYY)])
