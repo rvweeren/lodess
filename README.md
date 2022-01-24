@@ -1,4 +1,4 @@
-# lodess
+# The LOFAR Decameter Sky Survey Pipeline (DeSSPi)
 
 The LOFAR Decameter Sky Survey (LoDeSS) is a survey of the northern sky, performed at frequencies between 14 and 30 MHz. Due to the unique nature of this 
 frequency range, we created a new pipeline for calibration. In addition, we include some other programs that help with finding the right parameters.
@@ -32,4 +32,9 @@ In this section, I describe the workflow that I use. This is not necessarily the
 may vary.
 
 - Select the pointings that you want to reduce, and find the corresponding L-numbers and the L-numbers of the calibrators from the LTA. Create a stage request
-- Use [preprocessor.py](prerun/preprocessor.py) 
+- Use [preprocessor.py](prerun/preprocessor.py) to quickly download and untar many different objects using parallel downloads from the LTA
+- Use [infield_finder.py](toolbox/infield_finder.py) to get an overview of each pointing that you want to reduce. Make sure that each pointing is sufficiently far away from A-team sources (CasA, CygA and to a lesser extend TauA or HerA). Identify a good, bright in-field calibrator by clicking on it and verify that it is not turning over.
+- Run: ` [LoDeSS.py](LoDeSS.py) --pipeline DI_calibrator --prerun ` to calibrate the calibrator (`--prerun` will also demix the data, you probably should leave this enabled)
+- Run: ` [LoDeSS.py](LoDeSS.py) --pipeline DI_target --direction "(xx.xxxx,yy.yyyy)" --cal_H5 /path/to/cal/h5/1 /path/to/cal/h5/2 --prerun /path/to/folder/with/ms1 /path/to/folder/with/ms2` . This will start the direction independent pipeline. Note that you need to give Lodess.py the calibrator h5s from the previous step
+- STILL WORK IN PROGRESS! Run: ` [LoDeSS.py](LoDeSS.py) --pipeline DD --rectangles /path/to/boxes --nthreads 6 /path/to/ms1 /path/to/ms2` to start the direction dependent pipeline - `--nthreads` should be drastically lowered on machines with less cpu/memory availability (this number works well on the Leiden LOFAR nodes, which contain 96 cpus and ~500G of RAM)
+- STILL WORK IN PROGRESS! Run: ` [LoDeSS.py](LoDeSS.py) --pipeline DDF /path/to/ms1 /path/to/ms2` to use DDF to make an image.
