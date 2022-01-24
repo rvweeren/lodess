@@ -36,8 +36,8 @@ modelfiles = glob.glob('*fits')
 for model in modelfiles:
     os.system(f'cp -r {model} run_{runname}/{model}')
 os.system(f'cp -r *.py run_{runname}/')
-msname = glob.glob('*.ms')[0]
-os.system(f'cp -r {msname} run_{runname}')
+msnames = glob.glob('*.ms')
+os.system(f'cp -r {msnames} run_{runname}')
 
 # iterate through each direction
 while len(os.listdir('PROGRESS/')) != 0:
@@ -52,13 +52,15 @@ while len(os.listdir('PROGRESS/')) != 0:
     os.system(f'cp -r rectangles/{chosen_direction} run_{runname}/{chosen_direction}')
     os.chdir(f'run_{runname}')
 
-    os.system(f'python3 standalone_peel.py {msname} {chosen_dir}')
+    for j,msname in enumerate(msnames):
+        os.system(f'python3 standalone_peel.py {msname} {chosen_dir} {j}')
+
     # Now, copy files to dedicated location
 
     os.mkdir(f'direction{i}')
     os.system(f'cp -r {chosen_direction} direction{i}')
     os.system(f'cp -r calibrate.py direction{i}')
-    os.system(f'cp -r {chosen_dir}.peel.ms direction{i}')
+    os.system(f'cp -r {chosen_dir}.*.peel.ms direction{i}')
     os.chdir(f'direction{i}')
     os.system(f'python3 calibrate.py {i}')
     os.chdir('../../')

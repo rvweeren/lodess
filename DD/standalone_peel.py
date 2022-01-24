@@ -203,8 +203,9 @@ colname     = 'DATA_SUB'
 # for name in peelregions:
 ms          = sys.argv[1]
 name        = sys.argv[2]
+serialnum   = sys.argv[3]
 boxfile     = name + '.reg'
-msout       = name + '.peel.ms'
+msout       = name + '.' + serialnum + '.peel.ms'
 imsize = getimsize(glob.glob(globstr)[0])
 scale       = 8.0 #asec
 r = pyregion.open(boxfile)
