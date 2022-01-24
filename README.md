@@ -34,7 +34,7 @@ may vary.
 - Select the pointings that you want to reduce, and find the corresponding L-numbers and the L-numbers of the calibrators from the LTA. Create a stage request
 - Use [preprocessor.py](prerun/preprocessor.py) to quickly download and untar many different objects using parallel downloads from the LTA
 - Use [infield_finder.py](toolbox/infield_finder.py) to get an overview of each pointing that you want to reduce. Make sure that each pointing is sufficiently far away from A-team sources (CasA, CygA and to a lesser extend TauA or HerA). Identify a good, bright in-field calibrator by clicking on it and verify that it is not turning over.
-- Run: ` [LoDeSS.py](LoDeSS.py) --pipeline DI_calibrator --prerun ` to calibrate the calibrator (`--prerun` will also demix the data, you probably should leave this enabled)
+- Run: `LoDeSS.py --pipeline DI_calibrator --prerun ` to calibrate the calibrator (`--prerun` will also demix the data, you probably should leave this enabled)
 - Check the FITS image and the waterfall plots to see if there are no major problems (severe scintillation, A-team interference or particularly strong ionospheric effects)
 - Run: `LoDeSS.py --pipeline DI_target --direction "(xx.xxxx,yy.yyyy)" --cal_H5 /path/to/cal/h5/1 /path/to/cal/h5/2 --prerun /path/to/folder/with/ms1 /path/to/folder/with/ms2` . This will start the direction independent pipeline. Note that you need to give Lodess.py the calibrator h5s from the previous step
 - Check if the in-field calibrator has been succesfully calibrated (and not diverged)
